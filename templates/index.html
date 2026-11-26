@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titanic Survival Predictor</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-icon">T</div>
+            <span>Titanic Predictor</span>
+        </div>
+
+        <span class="badge">Machine Learning</span>
+    </header>
+
+    <main class="container">
+
+        <section class="hero">
+            <span class="eyebrow">MACHINE LEARNING PROJECT</span>
+
+            <h1>Would you have<br>survived the Titanic?</h1>
+
+            <p>
+                Explore a machine learning prediction based on
+                passenger characteristics from the Titanic dataset.
+            </p>
+        </section>
+
+        <section class="prediction-card">
+
+            <div class="card-header">
+                <h2>Passenger Information</h2>
+                <p>Enter the details below to generate a prediction.</p>
+            </div>
+
+            {% if error %}
+            <div class="result error">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form action="{{ url_for('predict') }}" method="POST">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label for="pclass">Passenger Class</label>
+
+                        <select id="pclass" name="pclass" required>
+                            <option value="1" {% if form and form.pclass == '1' %}selected{% endif %}>1st Class</option>
+                            <option value="2" {% if form and form.pclass == '2' %}selected{% endif %}>2nd Class</option>
+                            <option value="3" {% if not form or form.pclass == '3' %}selected{% endif %}>3rd Class</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sex">Sex</label>
+
+                        <select id="sex" name="sex" required>
+                            <option value="female" {% if not form or form.sex == 'female' %}selected{% endif %}>Female</option>
+                            <option value="male" {% if form and form.sex == 'male' %}selected{% endif %}>Male</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="age">Age</label>
+
+                        <input
+                            type="number"
+                            id="age"
+                            name="age"
+                            min="0"
+                            max="100"
+                            step="any"
+                            placeholder="e.g. 28"
+                            value="{{ form.age if form else '' }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fare">Ticket Fare</label>
+
+                        <input
+                            type="number"
+                            id="fare"
+                            name="fare"
+                            min="0"
+                            step="any"
+                            placeholder="e.g. 32.50"
+                            value="{{ form.fare if form else '' }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sibsp">Siblings / Spouses</label>
+
+                        <input
+                            type="number"
+                            id="sibsp"
+                            name="sibsp"
+                            min="0"
+                            step="1"
+                            value="{{ form.sibsp if form else '0' }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="parch">Parents / Children</label>
+
+                        <input
+                            type="number"
+                            id="parch"
+                            name="parch"
+                            min="0"
+                            step="1"
+                            value="{{ form.parch if form else '0' }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="embarked">Port of Embarkation</label>
+
+                        <select id="embarked" name="embarked" required>
+                            <option value="S" {% if not form or form.embarked == 'S' %}selected{% endif %}>Southampton</option>
+                            <option value="C" {% if form and form.embarked == 'C' %}selected{% endif %}>Cherbourg</option>
+                            <option value="Q" {% if form and form.embarked == 'Q' %}selected{% endif %}>Queenstown</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <button type="submit" class="predict-button">
+                    Predict Survival
+                    <span>&rarr;</span>
+                </button>
+
+            </form>
+
+            {% if pred %}
+
+            <div class="result {{ prediction_class }}">
+
+                <div class="result-label">
+                    Prediction Result
+                </div>
+
+                <h3>{{ pred }}</h3>
+
+                <p>
+                    Estimated survival probability
+                </p>
+
+                <div class="probability">
+                    {{ prob }}
+                </div>
+
+                <div class="progress-track">
+                    <div
+                        class="progress-fill"
+                        data-prob-width="{{ prob_width }}"
+                        role="progressbar"
+                        aria-label="Estimated survival probability"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        aria-valuenow="{{ prob_width|replace('%', '') }}"
+                    ></div>
+                </div>
+
+                <p class="result-note">
+                    This is a machine learning estimate,
+                    not a certainty.
+                </p>
+
+            </div>
+
+            {% endif %}
+
+        </section>
+
+        <footer>
+            <p>
+                Titanic Survival Prediction &bull;
+                Built with Python, Scikit-learn and Flask
+            </p>
+        </footer>
+
+    </main>
+
+    <script>
+        document.querySelectorAll('.progress-fill[data-prob-width]').forEach((fill) => {
+            fill.style.width = fill.dataset.probWidth;
+        });
+    </script>
+
+</body>
+</html>
