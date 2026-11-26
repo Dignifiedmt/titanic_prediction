@@ -1,168 +1,61 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#f5f7fc">
-    <meta name="description" content="Explore a Titanic passenger survival prediction powered by a machine learning model.">
-    <title>Titanic — Survival Predictor</title>
-    <script>
-        (function () {
-            try {
-                const saved = localStorage.getItem("titanic-theme");
-                const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-                document.documentElement.dataset.theme = saved || preferred;
-            } catch (_) {}
-        })();
-    </script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f7fc">
+  <meta name="description" content="Explore Titanic passenger survival patterns and predictions with an interactive machine learning demo.">
+  <title>Titanic — Survival Predictor</title>
+  <script>
+    (() => { try { const saved = localStorage.getItem("titanic-theme"); const preferred = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; document.documentElement.dataset.theme = saved || preferred; } catch (_) {} })();
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
 </head>
 <body>
-    <div class="ambient ambient-one" aria-hidden="true"></div>
-    <div class="ambient ambient-two" aria-hidden="true"></div>
-
-    <header class="site-header">
-        <a class="brand" href="{{ url_for('home') }}" aria-label="Titanic Predictor home">
-            <span class="brand-mark">T</span>
-            <span class="brand-copy"><strong>Titanic</strong><small>Survival Predictor</small></span>
-        </a>
-        <div class="header-actions">
-            <span class="model-status"><span class="status-dot"></span> Model ready</span>
-            <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Toggle theme">
-                <svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
-                <svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 8.6 8.6 0 1 0 20.2 15.4Z"></path></svg>
-            </button>
-        </div>
-    </header>
-
-    <main class="page-shell">
-        <section class="intro reveal">
-            <span class="eyebrow"><span class="eyebrow-star">✦</span> MACHINE LEARNING EXPERIENCE</span>
-            <h1>Explore the story<br>of <span class="gradient-text">survival.</span></h1>
-            <p>Enter a passenger profile to see what a machine learning model predicts from patterns in the Titanic dataset.</p>
-            <div class="intro-note"><span class="note-line"></span><span>Seven passenger details · One prediction</span></div>
-        </section>
-
-        <section class="workspace">
-            <div class="form-card reveal">
-                <div class="card-heading">
-                    <div>
-                        <span class="section-kicker">PASSENGER PROFILE</span>
-                        <h2>Passenger details</h2>
-                        <p>Complete the fields to generate a prediction.</p>
-                    </div>
-                    <div class="heading-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="M12 3.5 14.5 9.5 21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3.5Z"></path></svg>
-                    </div>
-                </div>
-
-                {% if error %}
-                <div class="alert alert-error" role="alert"><span class="alert-icon">!</span><span>{{ error }}</span></div>
-                {% endif %}
-
-                <form action="{{ url_for('predict') }}" method="POST" id="predictionForm" novalidate>
-                    <div class="form-grid">
-                        <div class="field">
-                            <label for="pclass">Passenger class</label>
-                            <select id="pclass" name="pclass" required>
-                                <option value="1" {% if values.get('pclass', '3') == '1' %}selected{% endif %}>1st class · Upper</option>
-                                <option value="2" {% if values.get('pclass') == '2' %}selected{% endif %}>2nd class · Middle</option>
-                                <option value="3" {% if values.get('pclass', '3') == '3' %}selected{% endif %}>3rd class · Lower</option>
-                            </select>
-                            <small class="field-hint">The passenger's ticket class.</small>
-                        </div>
-                        <div class="field">
-                            <label for="sex">Sex</label>
-                            <select id="sex" name="sex" required>
-                                <option value="female" {% if values.get('sex', 'female') == 'female' %}selected{% endif %}>Female</option>
-                                <option value="male" {% if values.get('sex') == 'male' %}selected{% endif %}>Male</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label for="age">Age <span class="optional-label">years</span></label>
-                            <input id="age" name="age" type="number" min="0" max="100" step="0.1" placeholder="e.g. 28" value="{{ values.get('age', '') }}" required inputmode="decimal">
-                        </div>
-                        <div class="field">
-                            <label for="fare">Ticket fare <span class="optional-label">historical fare</span></label>
-                            <input id="fare" name="fare" type="number" min="0" max="100000" step="0.01" placeholder="e.g. 32.50" value="{{ values.get('fare', '') }}" required inputmode="decimal">
-                        </div>
-                        <div class="field">
-                            <label for="sibsp">Siblings / spouses</label>
-                            <input id="sibsp" name="sibsp" type="number" min="0" max="20" step="1" value="{{ values.get('sibsp', '0') }}" required inputmode="numeric">
-                        </div>
-                        <div class="field">
-                            <label for="parch">Parents / children</label>
-                            <input id="parch" name="parch" type="number" min="0" max="20" step="1" value="{{ values.get('parch', '0') }}" required inputmode="numeric">
-                        </div>
-                        <div class="field field-wide">
-                            <label for="embarked">Port of embarkation</label>
-                            <select id="embarked" name="embarked" required>
-                                <option value="S" {% if values.get('embarked', 'S') == 'S' %}selected{% endif %}>Southampton (S)</option>
-                                <option value="C" {% if values.get('embarked') == 'C' %}selected{% endif %}>Cherbourg (C)</option>
-                                <option value="Q" {% if values.get('embarked') == 'Q' %}selected{% endif %}>Queenstown (Q)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-footer">
-                        <button class="primary-button" id="predictButton" type="submit">
-                            <span class="button-label">Predict survival</span>
-                            <span class="button-arrow" aria-hidden="true">→</span>
-                            <span class="button-spinner" aria-hidden="true"></span>
-                        </button>
-                        <button class="secondary-button" id="resetButton" type="reset">Clear form</button>
-                    </div>
-                    <p class="privacy-note"><span aria-hidden="true">◇</span> Demo only. Passenger details are processed by this local application.</p>
-                </form>
-
-                {% if result %}
-                <section class="result-card {{ result.class_name }}" id="resultCard" aria-live="polite">
-                    <div class="result-topline">
-                        <div class="result-symbol" aria-hidden="true">{% if result.prediction == 1 %}✓{% else %}—{% endif %}</div>
-                        <div class="result-copy">
-                            <span class="section-kicker">MODEL PREDICTION</span>
-                            <h3>{{ result.label }}</h3>
-                        </div>
-                        <span class="result-chip">Complete</span>
-                    </div>
-                    <div class="probability-row"><span>Estimated survival probability</span><strong>{{ '%.1f'|format(result.probability) }}%</strong></div>
-                    <div class="progress-track"><div class="progress-fill" id="probabilityBar" data-value="{{ result.probability }}"></div></div>
-                    <p class="result-caveat">This percentage is the model's estimated probability for the survival class. It is not a guarantee or a statement of historical fact.</p>
-                </section>
-                {% endif %}
-            </div>
-
-            <aside class="side-column">
-                <div class="side-card model-card reveal">
-                    <div class="side-card-top"><span class="side-icon">✳</span><span class="live-label">READY</span></div>
-                    <span class="section-kicker">PREDICTION ENGINE</span>
-                    <h3>Random Forest</h3>
-                    <p>A classification model trained on the Titanic passenger dataset.</p>
-                    <div class="side-divider"></div>
-                    <div class="detail-line"><span>Input features</span><strong>07</strong></div>
-                    <div class="detail-line"><span>Task</span><strong>Classification</strong></div>
-                    <div class="detail-line"><span>Output</span><strong>Class + probability</strong></div>
-                </div>
-                <div class="side-card explanation-card reveal">
-                    <span class="section-kicker">HOW IT WORKS</span>
-                    <div class="mini-step"><span>01</span><div><strong>Passenger details</strong><p>Provide the seven required inputs.</p></div></div>
-                    <div class="mini-step"><span>02</span><div><strong>Preprocessing</strong><p>The saved pipeline encodes and transforms the data.</p></div></div>
-                    <div class="mini-step"><span>03</span><div><strong>Prediction</strong><p>The classifier returns an outcome and probability.</p></div></div>
-                </div>
-            </aside>
-        </section>
-
-        <section class="disclaimer reveal">
-            <span class="disclaimer-mark">i</span>
-            <p><strong>About this project</strong><br>This is an educational demonstration using historical passenger data. A model's learned patterns can be imperfect and should not be interpreted as causal explanations.</p>
-        </section>
-
-        <footer class="site-footer">
-            <a class="footer-brand" href="{{ url_for('home') }}">Titanic <span>Survival Predictor</span></a>
-            <p>Built with Python · Scikit-learn · Flask · HTML · CSS · JavaScript</p>
-            <span class="footer-caption">An educational machine learning project</span>
-        </footer>
-    </main>
+  <div class="ambient ambient-one" aria-hidden="true"></div><div class="ambient ambient-two" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="{{ url_for('home') }}" aria-label="Titanic Predictor home"><span class="brand-mark">T</span><span class="brand-copy"><strong>Titanic</strong><small>Survival Predictor</small></span></a>
+    <div class="header-actions"><span class="model-status"><span class="status-dot"></span> Model ready</span><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch theme" title="Toggle theme"><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg><svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 8.6 8.6 0 1 0 20.2 15.4Z"></path></svg></button></div>
+  </header>
+  <main class="page-shell">
+    <section class="intro reveal"><span class="eyebrow"><span class="eyebrow-star">✦</span> MACHINE LEARNING EXPERIENCE</span><h1>Explore the story<br>of <span class="gradient-text">survival.</span></h1><p>Enter a passenger profile to explore how a machine learning model estimates survival probability, then compare it with patterns in the historical dataset.</p><div class="intro-note"><span class="note-line"></span><span>Seven passenger details · One prediction</span></div></section>
+    <section class="workspace">
+      <div class="form-card reveal">
+        <div class="card-heading"><div><span class="section-kicker">PASSENGER PROFILE</span><h2>Passenger details</h2><p>Complete the fields to generate a prediction.</p></div><div class="heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 14.5 9.5 21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3.5Z"></path></svg></div></div>
+        {% if error %}<div class="alert alert-error" role="alert"><span class="alert-icon">!</span><span>{{ error }}</span></div>{% endif %}
+        <form action="{{ url_for('predict') }}" method="POST" id="predictionForm" novalidate>
+          <div class="form-grid">
+            <div class="field"><label for="pclass">Passenger class</label><select id="pclass" name="pclass" required><option value="1" {% if values.get('pclass', '3') == '1' %}selected{% endif %}>1st class · Upper</option><option value="2" {% if values.get('pclass') == '2' %}selected{% endif %}>2nd class · Middle</option><option value="3" {% if values.get('pclass', '3') == '3' %}selected{% endif %}>3rd class · Lower</option></select><small class="field-hint">The passenger's ticket class.</small></div>
+            <div class="field"><label for="sex">Sex</label><select id="sex" name="sex" required><option value="female" {% if values.get('sex', 'female') == 'female' %}selected{% endif %}>Female</option><option value="male" {% if values.get('sex') == 'male' %}selected{% endif %}>Male</option></select></div>
+            <div class="field"><label for="age">Age <span class="optional-label">years</span></label><input id="age" name="age" type="number" min="0" max="100" step="0.1" placeholder="e.g. 28" value="{{ values.get('age', '') }}" required inputmode="decimal"></div>
+            <div class="field"><label for="fare">Ticket fare <span class="optional-label">historical fare</span></label><input id="fare" name="fare" type="number" min="0" max="100000" step="0.01" placeholder="e.g. 32.50" value="{{ values.get('fare', '') }}" required inputmode="decimal"></div>
+            <div class="field"><label for="sibsp">Siblings / spouses</label><input id="sibsp" name="sibsp" type="number" min="0" max="20" step="1" value="{{ values.get('sibsp', '0') }}" required inputmode="numeric"></div>
+            <div class="field"><label for="parch">Parents / children</label><input id="parch" name="parch" type="number" min="0" max="20" step="1" value="{{ values.get('parch', '0') }}" required inputmode="numeric"></div>
+            <div class="field field-wide"><label for="embarked">Port of embarkation</label><select id="embarked" name="embarked" required><option value="S" {% if values.get('embarked', 'S') == 'S' %}selected{% endif %}>Southampton (S)</option><option value="C" {% if values.get('embarked') == 'C' %}selected{% endif %}>Cherbourg (C)</option><option value="Q" {% if values.get('embarked') == 'Q' %}selected{% endif %}>Queenstown (Q)</option></select></div>
+          </div>
+          <p class="smart-profile" id="smartProfile" aria-live="polite">Complete the profile to see a helpful summary of the passenger details.</p>
+          <div class="form-footer"><button class="primary-button" id="predictButton" type="submit"><span class="button-label">Predict survival</span><span class="button-arrow" aria-hidden="true">→</span><span class="button-spinner" aria-hidden="true"></span></button><button class="secondary-button" id="resetButton" type="reset">Clear form</button></div>
+          <p class="privacy-note"><span aria-hidden="true">◇</span> Demo only. Passenger details are processed by this local application.</p>
+        </form>
+        {% if result %}
+        <section class="result-card {{ result.class_name }}" id="resultCard" aria-live="polite"><div class="result-topline"><div class="result-symbol" aria-hidden="true">{% if result.prediction == 1 %}✓{% else %}—{% endif %}</div><div class="result-copy"><span class="section-kicker">MODEL PREDICTION</span><h3>{{ result.label }}</h3></div><span class="result-chip">Complete</span></div>
+          <div class="probability-row"><span>Estimated survival probability</span><strong>{{ '%.1f'|format(result.probability) }}%</strong></div><div class="probability-chart" role="img" aria-label="Survival probability {{ '%.1f'|format(result.probability) }} percent; not-survival probability {{ '%.1f'|format(result.not_survived_probability) }} percent"><div class="probability-survived" style="width: {{ result.probability }}%"></div></div><div class="probability-legend"><span>Survival {{ '%.1f'|format(result.probability) }}%</span><span>Not survival {{ '%.1f'|format(result.not_survived_probability) }}%</span></div>
+          <p class="result-insight">Profile summary: {{ result.age_group }} · {{ result.profile_note }} · party size {{ result.family_size }}.</p><p class="result-caveat">This is the model's estimated probability, not a guarantee or a statement of historical fact. Patterns in the chart below are descriptive, not causal.</p>
+        </section>{% endif %}
+      </div>
+      <aside class="side-column">
+        <div class="side-card model-card reveal"><div class="side-card-top"><span class="side-icon">✳</span><span class="live-label">READY</span></div><span class="section-kicker">PREDICTION ENGINE</span><h3>Random Forest</h3><p>A classification model trained on the Titanic passenger dataset.</p><div class="side-divider"></div><div class="detail-line"><span>Input features</span><strong>07</strong></div><div class="detail-line"><span>Task</span><strong>Classification</strong></div><div class="detail-line"><span>Test accuracy</span><strong>{% if metrics.get('accuracy') is not none %}{{ '%.1f'|format(metrics.get('accuracy') * 100) }}%{% else %}—{% endif %}</strong></div><div class="detail-line"><span>Test F1 score</span><strong>{% if metrics.get('f1_score') is not none %}{{ '%.1f'|format(metrics.get('f1_score') * 100) }}%{% else %}—{% endif %}</strong></div></div>
+        <div class="side-card explanation-card reveal"><span class="section-kicker">HOW IT WORKS</span><div class="mini-step"><span>01</span><div><strong>Passenger details</strong><p>Provide seven validated inputs.</p></div></div><div class="mini-step"><span>02</span><div><strong>Preprocessing</strong><p>The saved pipeline encodes and transforms data.</p></div></div><div class="mini-step"><span>03</span><div><strong>Prediction</strong><p>Compare both class probabilities and explore dataset patterns.</p></div></div></div>
+      </aside>
+    </section>
+    <section class="analytics-card reveal" aria-labelledby="chartTitle"><div class="analytics-heading"><div><span class="section-kicker">DATASET EXPLORER</span><h2 id="chartTitle">Observed survival by passenger class</h2><p>Historical survival rates from the bundled dataset, shown separately by sex.</p></div><label class="chart-filter-label" for="chartSexFilter">View <select id="chartSexFilter"><option value="all">Everyone</option><option value="female">Female</option><option value="male">Male</option></select></label></div>
+      {% if survival_chart %}<div id="survivalChart" class="bar-chart" role="img" aria-label="Bar chart of historical survival rates by passenger class and sex"></div><div class="chart-legend"><span><i class="legend-swatch female-swatch"></i>Female</span><span><i class="legend-swatch male-swatch"></i>Male</span></div><p class="chart-note" id="chartNote">Rates are calculated from passengers with known class, sex, and survival outcome. Group sizes vary.</p><script id="survivalData" type="application/json">{{ survival_chart|tojson }}</script>{% else %}<p class="chart-note">Chart data is not available. Check that Titanic-Dataset.csv contains Pclass, Sex, and Survived columns.</p>{% endif %}
+      <noscript><p class="chart-note">Enable JavaScript to view the interactive chart.</p></noscript>
+    </section>
+    <section class="disclaimer reveal"><span class="disclaimer-mark">i</span><p><strong>About this project</strong><br>This is an educational demonstration using historical passenger data. Model predictions can be imperfect, and charted associations should not be interpreted as causal explanations.</p></section>
+    <footer class="site-footer"><a class="footer-brand" href="{{ url_for('home') }}">Titanic <span>Survival Predictor</span></a><p>Built with Python · Scikit-learn · Flask · HTML · CSS · JavaScript</p><span class="footer-caption">An educational machine learning project · <a href="{{ url_for('analytics') }}">Analytics JSON</a></span></footer>
+  </main>
 </body>
 </html>

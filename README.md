@@ -1,77 +1,50 @@
 # Titanic Survival Predictor
 
-A responsive Flask web application that serves a Random Forest classification pipeline trained in a Jupyter Notebook. The interface includes light/dark themes, responsive layouts, client-side interactions, and a survival-class probability display.
+A responsive Flask application serving a Random Forest classifier trained on the Titanic passenger dataset. It provides validated predictions, an interactive historical survival chart, and an in-form passenger profile summary.
 
 ## Project contents
 
 ```text
-titanic-predictor/
 ├── Titanic-Dataset.csv
 ├── Titanic_Model.ipynb
 ├── titanic_model.pkl
 ├── model_metadata.json
 ├── app.py
 ├── requirements.txt
-├── README.md
-├── .gitignore
 ├── templates/
 │   ├── index.html
 │   └── 404.html
 └── static/
     ├── css/style.css
+    ├── css/analytics.css
     └── js/script.js
 ```
 
-## Requirements
+## Run locally
 
-- Python 3.11 or newer is recommended.
-- Use the dependency versions in `requirements.txt` when loading the included Pickle model. Pickle is Python-version and library-version sensitive.
+Use Python 3.11 or newer and the compatible dependencies in `requirements.txt`:
 
-## Windows setup (PowerShell)
-
-```powershell
-py -3.11 -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
+```bash
+python -m venv .venv
+# Activate the virtual environment, then:
 pip install -r requirements.txt
-```
-
-If PowerShell blocks activation, use Command Prompt and run `.venv\Scripts\activate.bat`.
-
-## Train or retrain the model
-
-1. Open `Titanic_Model.ipynb` in VS Code (with the Jupyter extension) or Jupyter Notebook.
-2. Select the Python environment where you installed `requirements.txt`.
-3. Run the notebook cells from top to bottom. It is arranged into **10 main steps**.
-4. Step 10 writes `titanic_model.pkl` and `model_metadata.json` in the notebook's working directory.
-
-The notebook uses the seven same features as the Flask form: `Pclass`, `Sex`, `Age`, `SibSp`, `Parch`, `Fare`, and `Embarked`. The saved object is a complete Scikit-learn pipeline, including imputers, one-hot encoding, and the classifier.
-
-## Start Flask
-
-From the project root, run:
-
-```powershell
 python app.py
 ```
 
-Open http://127.0.0.1:5000/ in your browser. The `/health` endpoint returns a basic application health status.
+Open http://127.0.0.1:5000/. `/health` reports application health, and `/api/analytics` returns the aggregated chart data as JSON.
 
-## Model and evaluation notes
+## Smart features and chart
 
-- The notebook reserves 20% of the data as a stratified test set.
-- Reported metrics are calculated from the supplied CSV when the notebook runs; they are not hardcoded.
-- Feature importance is a model-inspection aid, not evidence of causation.
-- The probability shown by the web application is the classifier's estimated probability for the survival class. It is not guaranteed to be calibrated.
-- This is an educational demonstration using historical data, not a source of historical certainty.
+- The model validates input values server-side (including non-finite numeric values) and returns probabilities for both outcomes.
+- The profile helper summarizes age band, ticket class, and travel-party size without claiming those fields explain or cause a prediction.
+- The chart calculates observed survival rates by passenger class and sex from `Titanic-Dataset.csv`, with an interactive sex filter and group sizes in bar tooltips.
+- Test accuracy and F1 score are read from `model_metadata.json` when available.
+- Chart associations are descriptive historical summaries, not causal findings. Estimated probabilities are not guaranteed to be calibrated.
+
+## Train or retrain
+
+Open `Titanic_Model.ipynb` and run the notebook cells from top to bottom. The saved pipeline and metadata should be generated in the project directory. Keep Python, NumPy, Pandas, and Scikit-learn versions compatible with the serialized model.
 
 ## Security and deployment
 
-- Only load `titanic_model.pkl` if you created it or obtained it from a trusted source. Pickle files can execute code during loading.
-- Keep Python, NumPy, Pandas, and Scikit-learn versions compatible between training and serving. The included dependency file pins the core versions used for the included model.
-- `debug=True` is enabled for local development only. Turn debug mode off for public deployment.
-- For a production deployment, use a production WSGI server such as Gunicorn (typically on Linux), configure HTTPS, and add appropriate security controls.
-
-## Author
-
-Khadija Muhammad Tasiu
+Only load `titanic_model.pkl` if you created it or obtained it from a trusted source: Pickle files can execute code during loading. `debug=True` is intended for local development only; disable it for public deployment and use a production WSGI server with appropriate security controls.
