@@ -1,67 +1,71 @@
-import os
+"""Flask web application for the Titanic Survival Predictor."""
+from pathlib import Path
 import pickle
-import math
-import pandas as pd
 
+import pandas as pd
 from flask import Flask, render_template, request
+
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "titanic_model.pkl"
+
+FEATURES = ["Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked"]
 
 app = Flask(__name__)
 
-MODEL_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "titanic_model.pkl"
-)
+if not MODEL_PATH.exists():
+    raise FileNotFoundError(
+        f"Trained model not found at {MODEL_PATH}. "
+        "Open Titanic_Model.ipynb and run all 10 steps first."
+    )
 
-# Load the trained model
-with open(MODEL_PATH, "rb") as file:
-    model = pickle.load(file)
+# Pickle can execute code while loading. Only load a model file you created
+# yourself or obtained from a trusted source. Keep training/deployment
+# Python and scikit-learn versions compatible.
+with MODEL_PATH.open("rb") as model_file:
+    model = pickle.load(model_file)
 
 
-@app.route("/")
+def render_home(*, error=None, result=None, values=None, status=200):
+    return render_template(
+        "index.html",
+        error=error,
+        result=result,
+        values=values or {},
+    ), status
+
+
+@app.get("/")
 def home():
-    return render_template("index.html")
+    return render_home()
 
 
-@app.route("/predict", methods=["POST"])
+@app.post("/predict")
 def predict():
+    values = request.form.to_dict()
 
     try:
-        # Collect form values
-        pclass = int(request.form["pclass"])
-        sex = request.form["sex"]
-        age = float(request.form["age"])
-        sibsp = int(request.form["sibsp"])
-        parch = int(request.form["parch"])
-        fare = float(request.form["fare"])
-        embarked = request.form["embarked"]
+        # Parse and validate the submitted values on the server.
+        pclass = int(values.get("pclass", ""))
+        sex = values.get("sex", "")
+        age = float(values.get("age", ""))
+        sibsp = int(values.get("sibsp", ""))
+        parch = int(values.get("parch", ""))
+        fare = float(values.get("fare", ""))
+        embarked = values.get("embarked", "")
 
-        form_values = {
-            "pclass": str(pclass),
-            "sex": sex,
-            "age": str(age),
-            "sibsp": str(sibsp),
-            "parch": str(parch),
-            "fare": str(fare),
-            "embarked": embarked,
-        }
+        if pclass not in (1, 2, 3):
+            raise ValueError("Choose a valid passenger class.")
+        if sex not in ("female", "male"):
+            raise ValueError("Choose a valid sex option.")
+        if not 0 <= age <= 100:
+            raise ValueError("Age must be between 0 and 100.")
+        if not 0 <= fare <= 100000:
+            raise ValueError("Enter a valid non-negative ticket fare.")
+        if not 0 <= sibsp <= 20 or not 0 <= parch <= 20:
+            raise ValueError("Family counts must be between 0 and 20.")
+        if embarked not in ("S", "C", "Q"):
+            raise ValueError("Choose a valid port of embarkation.")
 
-        # Validate numeric inputs
-        if not all(math.isfinite(value) for value in (age, fare)):
-            raise ValueError("Values must be finite.")
-
-        if age < 0 or fare < 0 or sibsp < 0 or parch < 0:
-            raise ValueError("Values cannot be negative.")
-
-        if pclass not in [1, 2, 3]:
-            raise ValueError("Invalid passenger class.")
-
-        if sex not in ["male", "female"]:
-            raise ValueError("Invalid sex selection.")
-
-        if embarked not in ["S", "C", "Q"]:
-            raise ValueError("Invalid embarkation port.")
-
-        # Prepare passenger data
         passenger = pd.DataFrame([{
             "Pclass": pclass,
             "Sex": sex,
@@ -69,45 +73,35 @@ def predict():
             "SibSp": sibsp,
             "Parch": parch,
             "Fare": fare,
-            "Embarked": embarked
-        }])
+            "Embarked": embarked,
+        }], columns=FEATURES)
 
-        # Predict survival
-        prediction = model.predict(passenger)[0]
+        prediction = int(model.predict(passenger)[0])
+        probability = float(model.predict_proba(passenger)[0, 1])
 
-        probability = model.predict_proba(passenger)[0][1]
-
-        result = (
-            "Survived"
-            if prediction == 1
-            else "Did Not Survive"
-        )
-
-        return render_template(
-            "index.html",
-            pred=result,
-            prob=f"{probability:.1%}",
-            prob_width=f"{probability:.1%}",
-            form=form_values,
-            prediction_class="survived" if prediction == 1 else "not-survived"
-        )
-
-    except (ValueError, KeyError, TypeError):
-        form_values = {
-            "pclass": request.form.get("pclass", "3"),
-            "sex": request.form.get("sex", "female"),
-            "age": request.form.get("age", ""),
-            "sibsp": request.form.get("sibsp", "0"),
-            "parch": request.form.get("parch", "0"),
-            "fare": request.form.get("fare", ""),
-            "embarked": request.form.get("embarked", "S"),
+        result = {
+            "label": "Survived" if prediction == 1 else "Did not survive",
+            "class_name": "survived" if prediction == 1 else "not-survived",
+            "probability": round(probability * 100, 1),
+            "prediction": prediction,
         }
-        return render_template(
-            "index.html",
-            error="Please enter valid passenger information.",
-            form=form_values
-        )
+        return render_home(result=result, values=values)
+
+    except (ValueError, TypeError, KeyError) as exc:
+        message = str(exc) or "Please check the passenger details and try again."
+        return render_home(error=message, values=values, status=400)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "model_loaded": True}
+
+
+@app.errorhandler(404)
+def page_not_found(_error):
+    return render_template("404.html"), 404
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Debug is convenient locally. Turn it off for public deployment.
+    app.run(host="127.0.0.1", port=5000, debug=True)

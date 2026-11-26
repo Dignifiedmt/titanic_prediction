@@ -1,8 +1,10 @@
-
-Flask
-pandas
-numpy
-scikit-learn
-matplotlib
-seaborn
-gunicorn
+# Core versions used to create the included Pickle model. Keep these compatible.
+Flask>=3.0,<4.0
+pandas==2.2.3
+numpy==2.3.5
+scikit-learn==1.8.0
+matplotlib==3.10.8
+seaborn==0.13.2
+notebook>=7.0,<8.0
+ipykernel>=6.0,<7.0
+gunicorn>=22.0,<24.0

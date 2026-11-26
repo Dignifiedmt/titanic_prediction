@@ -1,0 +1,7 @@
+Evaluation scores calculated from Titanic-Dataset.csv with a stratified 80/20 split (random_state=42):
+Accuracy: 81.56%
+Precision: 80.00%
+Recall: 69.57%
+F1 Score: 74.42%
+
+These are reproducible test-set results for this model configuration, not a guarantee of performance on other data.

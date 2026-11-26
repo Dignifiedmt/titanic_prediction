@@ -1,207 +1,168 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Titanic Survival Predictor</title>
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="theme-color" content="#f5f7fc">
+    <meta name="description" content="Explore a Titanic passenger survival prediction powered by a machine learning model.">
+    <title>Titanic — Survival Predictor</title>
+    <script>
+        (function () {
+            try {
+                const saved = localStorage.getItem("titanic-theme");
+                const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                document.documentElement.dataset.theme = saved || preferred;
+            } catch (_) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
 </head>
-
 <body>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
 
-    <header class="topbar">
-        <div class="brand">
-            <div class="brand-icon">T</div>
-            <span>Titanic Predictor</span>
+    <header class="site-header">
+        <a class="brand" href="{{ url_for('home') }}" aria-label="Titanic Predictor home">
+            <span class="brand-mark">T</span>
+            <span class="brand-copy"><strong>Titanic</strong><small>Survival Predictor</small></span>
+        </a>
+        <div class="header-actions">
+            <span class="model-status"><span class="status-dot"></span> Model ready</span>
+            <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Toggle theme">
+                <svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
+                <svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 8.6 8.6 0 1 0 20.2 15.4Z"></path></svg>
+            </button>
         </div>
-
-        <span class="badge">Machine Learning</span>
     </header>
 
-    <main class="container">
-
-        <section class="hero">
-            <span class="eyebrow">MACHINE LEARNING PROJECT</span>
-
-            <h1>Would you have<br>survived the Titanic?</h1>
-
-            <p>
-                Explore a machine learning prediction based on
-                passenger characteristics from the Titanic dataset.
-            </p>
+    <main class="page-shell">
+        <section class="intro reveal">
+            <span class="eyebrow"><span class="eyebrow-star">✦</span> MACHINE LEARNING EXPERIENCE</span>
+            <h1>Explore the story<br>of <span class="gradient-text">survival.</span></h1>
+            <p>Enter a passenger profile to see what a machine learning model predicts from patterns in the Titanic dataset.</p>
+            <div class="intro-note"><span class="note-line"></span><span>Seven passenger details · One prediction</span></div>
         </section>
 
-        <section class="prediction-card">
+        <section class="workspace">
+            <div class="form-card reveal">
+                <div class="card-heading">
+                    <div>
+                        <span class="section-kicker">PASSENGER PROFILE</span>
+                        <h2>Passenger details</h2>
+                        <p>Complete the fields to generate a prediction.</p>
+                    </div>
+                    <div class="heading-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M12 3.5 14.5 9.5 21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3.5Z"></path></svg>
+                    </div>
+                </div>
 
-            <div class="card-header">
-                <h2>Passenger Information</h2>
-                <p>Enter the details below to generate a prediction.</p>
+                {% if error %}
+                <div class="alert alert-error" role="alert"><span class="alert-icon">!</span><span>{{ error }}</span></div>
+                {% endif %}
+
+                <form action="{{ url_for('predict') }}" method="POST" id="predictionForm" novalidate>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="pclass">Passenger class</label>
+                            <select id="pclass" name="pclass" required>
+                                <option value="1" {% if values.get('pclass', '3') == '1' %}selected{% endif %}>1st class · Upper</option>
+                                <option value="2" {% if values.get('pclass') == '2' %}selected{% endif %}>2nd class · Middle</option>
+                                <option value="3" {% if values.get('pclass', '3') == '3' %}selected{% endif %}>3rd class · Lower</option>
+                            </select>
+                            <small class="field-hint">The passenger's ticket class.</small>
+                        </div>
+                        <div class="field">
+                            <label for="sex">Sex</label>
+                            <select id="sex" name="sex" required>
+                                <option value="female" {% if values.get('sex', 'female') == 'female' %}selected{% endif %}>Female</option>
+                                <option value="male" {% if values.get('sex') == 'male' %}selected{% endif %}>Male</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="age">Age <span class="optional-label">years</span></label>
+                            <input id="age" name="age" type="number" min="0" max="100" step="0.1" placeholder="e.g. 28" value="{{ values.get('age', '') }}" required inputmode="decimal">
+                        </div>
+                        <div class="field">
+                            <label for="fare">Ticket fare <span class="optional-label">historical fare</span></label>
+                            <input id="fare" name="fare" type="number" min="0" max="100000" step="0.01" placeholder="e.g. 32.50" value="{{ values.get('fare', '') }}" required inputmode="decimal">
+                        </div>
+                        <div class="field">
+                            <label for="sibsp">Siblings / spouses</label>
+                            <input id="sibsp" name="sibsp" type="number" min="0" max="20" step="1" value="{{ values.get('sibsp', '0') }}" required inputmode="numeric">
+                        </div>
+                        <div class="field">
+                            <label for="parch">Parents / children</label>
+                            <input id="parch" name="parch" type="number" min="0" max="20" step="1" value="{{ values.get('parch', '0') }}" required inputmode="numeric">
+                        </div>
+                        <div class="field field-wide">
+                            <label for="embarked">Port of embarkation</label>
+                            <select id="embarked" name="embarked" required>
+                                <option value="S" {% if values.get('embarked', 'S') == 'S' %}selected{% endif %}>Southampton (S)</option>
+                                <option value="C" {% if values.get('embarked') == 'C' %}selected{% endif %}>Cherbourg (C)</option>
+                                <option value="Q" {% if values.get('embarked') == 'Q' %}selected{% endif %}>Queenstown (Q)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-footer">
+                        <button class="primary-button" id="predictButton" type="submit">
+                            <span class="button-label">Predict survival</span>
+                            <span class="button-arrow" aria-hidden="true">→</span>
+                            <span class="button-spinner" aria-hidden="true"></span>
+                        </button>
+                        <button class="secondary-button" id="resetButton" type="reset">Clear form</button>
+                    </div>
+                    <p class="privacy-note"><span aria-hidden="true">◇</span> Demo only. Passenger details are processed by this local application.</p>
+                </form>
+
+                {% if result %}
+                <section class="result-card {{ result.class_name }}" id="resultCard" aria-live="polite">
+                    <div class="result-topline">
+                        <div class="result-symbol" aria-hidden="true">{% if result.prediction == 1 %}✓{% else %}—{% endif %}</div>
+                        <div class="result-copy">
+                            <span class="section-kicker">MODEL PREDICTION</span>
+                            <h3>{{ result.label }}</h3>
+                        </div>
+                        <span class="result-chip">Complete</span>
+                    </div>
+                    <div class="probability-row"><span>Estimated survival probability</span><strong>{{ '%.1f'|format(result.probability) }}%</strong></div>
+                    <div class="progress-track"><div class="progress-fill" id="probabilityBar" data-value="{{ result.probability }}"></div></div>
+                    <p class="result-caveat">This percentage is the model's estimated probability for the survival class. It is not a guarantee or a statement of historical fact.</p>
+                </section>
+                {% endif %}
             </div>
 
-            {% if error %}
-            <div class="result error">
-                {{ error }}
-            </div>
-            {% endif %}
-
-            <form action="{{ url_for('predict') }}" method="POST">
-
-                <div class="form-grid">
-
-                    <div class="form-group">
-                        <label for="pclass">Passenger Class</label>
-
-                        <select id="pclass" name="pclass" required>
-                            <option value="1" {% if form and form.pclass == '1' %}selected{% endif %}>1st Class</option>
-                            <option value="2" {% if form and form.pclass == '2' %}selected{% endif %}>2nd Class</option>
-                            <option value="3" {% if not form or form.pclass == '3' %}selected{% endif %}>3rd Class</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="sex">Sex</label>
-
-                        <select id="sex" name="sex" required>
-                            <option value="female" {% if not form or form.sex == 'female' %}selected{% endif %}>Female</option>
-                            <option value="male" {% if form and form.sex == 'male' %}selected{% endif %}>Male</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="age">Age</label>
-
-                        <input
-                            type="number"
-                            id="age"
-                            name="age"
-                            min="0"
-                            max="100"
-                            step="any"
-                            placeholder="e.g. 28"
-                            value="{{ form.age if form else '' }}"
-                            required
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="fare">Ticket Fare</label>
-
-                        <input
-                            type="number"
-                            id="fare"
-                            name="fare"
-                            min="0"
-                            step="any"
-                            placeholder="e.g. 32.50"
-                            value="{{ form.fare if form else '' }}"
-                            required
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="sibsp">Siblings / Spouses</label>
-
-                        <input
-                            type="number"
-                            id="sibsp"
-                            name="sibsp"
-                            min="0"
-                            step="1"
-                            value="{{ form.sibsp if form else '0' }}"
-                            required
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="parch">Parents / Children</label>
-
-                        <input
-                            type="number"
-                            id="parch"
-                            name="parch"
-                            min="0"
-                            step="1"
-                            value="{{ form.parch if form else '0' }}"
-                            required
-                        >
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="embarked">Port of Embarkation</label>
-
-                        <select id="embarked" name="embarked" required>
-                            <option value="S" {% if not form or form.embarked == 'S' %}selected{% endif %}>Southampton</option>
-                            <option value="C" {% if form and form.embarked == 'C' %}selected{% endif %}>Cherbourg</option>
-                            <option value="Q" {% if form and form.embarked == 'Q' %}selected{% endif %}>Queenstown</option>
-                        </select>
-                    </div>
-
+            <aside class="side-column">
+                <div class="side-card model-card reveal">
+                    <div class="side-card-top"><span class="side-icon">✳</span><span class="live-label">READY</span></div>
+                    <span class="section-kicker">PREDICTION ENGINE</span>
+                    <h3>Random Forest</h3>
+                    <p>A classification model trained on the Titanic passenger dataset.</p>
+                    <div class="side-divider"></div>
+                    <div class="detail-line"><span>Input features</span><strong>07</strong></div>
+                    <div class="detail-line"><span>Task</span><strong>Classification</strong></div>
+                    <div class="detail-line"><span>Output</span><strong>Class + probability</strong></div>
                 </div>
-
-                <button type="submit" class="predict-button">
-                    Predict Survival
-                    <span>&rarr;</span>
-                </button>
-
-            </form>
-
-            {% if pred %}
-
-            <div class="result {{ prediction_class }}">
-
-                <div class="result-label">
-                    Prediction Result
+                <div class="side-card explanation-card reveal">
+                    <span class="section-kicker">HOW IT WORKS</span>
+                    <div class="mini-step"><span>01</span><div><strong>Passenger details</strong><p>Provide the seven required inputs.</p></div></div>
+                    <div class="mini-step"><span>02</span><div><strong>Preprocessing</strong><p>The saved pipeline encodes and transforms the data.</p></div></div>
+                    <div class="mini-step"><span>03</span><div><strong>Prediction</strong><p>The classifier returns an outcome and probability.</p></div></div>
                 </div>
-
-                <h3>{{ pred }}</h3>
-
-                <p>
-                    Estimated survival probability
-                </p>
-
-                <div class="probability">
-                    {{ prob }}
-                </div>
-
-                <div class="progress-track">
-                    <div
-                        class="progress-fill"
-                        data-prob-width="{{ prob_width }}"
-                        role="progressbar"
-                        aria-label="Estimated survival probability"
-                        aria-valuemin="0"
-                        aria-valuemax="100"
-                        aria-valuenow="{{ prob_width|replace('%', '') }}"
-                    ></div>
-                </div>
-
-                <p class="result-note">
-                    This is a machine learning estimate,
-                    not a certainty.
-                </p>
-
-            </div>
-
-            {% endif %}
-
+            </aside>
         </section>
 
-        <footer>
-            <p>
-                Titanic Survival Prediction &bull;
-                Built with Python, Scikit-learn and Flask
-            </p>
+        <section class="disclaimer reveal">
+            <span class="disclaimer-mark">i</span>
+            <p><strong>About this project</strong><br>This is an educational demonstration using historical passenger data. A model's learned patterns can be imperfect and should not be interpreted as causal explanations.</p>
+        </section>
+
+        <footer class="site-footer">
+            <a class="footer-brand" href="{{ url_for('home') }}">Titanic <span>Survival Predictor</span></a>
+            <p>Built with Python · Scikit-learn · Flask · HTML · CSS · JavaScript</p>
+            <span class="footer-caption">An educational machine learning project</span>
         </footer>
-
     </main>
-
-    <script>
-        document.querySelectorAll('.progress-fill[data-prob-width]').forEach((fill) => {
-            fill.style.width = fill.dataset.probWidth;
-        });
-    </script>
-
 </body>
 </html>
